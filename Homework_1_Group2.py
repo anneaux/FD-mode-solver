@@ -77,25 +77,31 @@ def guided_modes_2D(prm, k0, h, numb):
     guided : 3d-array
         Field distributions of the guided eigenmodes
     """
-    # N = np.shape(prm)[0]
-    #for testing:
-    N = 5
-    # alternatively: directly initialize the diagonal elements
-    # diag_elements = [-4] * diagonallength
-    # adj_elements = ([1]*(N-1) + [0])*diagonallength at adjacentline
-    L = sps.csr_matrix(sps.eye(N))
-    for i,j in zip(range(0,N,1), range(0,N,1)):
-        print(i+1,j)
-        print(L[i,j])
+    N = np.shape(prm)[0]
 
-    L[]
-    # L = 1/h**2 * matrix
+    # initializing the 2D mode operator
+    L = sps.lil_matrix(sps.eye(N**2))
+    for j in range(0,N): #
+        for k in range(0,N):
+            index = k*N + j # mein Punkt
+            L[index,index] = -4/h**2 + k0**2 * prm_2D[k,j]
+            if (index +1 < N**2):
+                L[index,index+1] = 1
+            if index -1 >= 0:
+                L[index,index-1] = 1
+            if index +N < N**2:
+                L[index,index+N] = 1
+            if index -N >= 0:
+                L[index,index-N] = 1
+
+    eigenvalues, eigenvectors = eigs(L, k = numb, which = "LR", maxiter = 1000)
+    return eigenvalues, eigenvectors
     pass
 
 
-# im Zweifel (das kommt eigtl aus der testscipt datei)
-grid_size     = 100 # please choose appropriate value
-number_points = 200 # please choose appropriate value
+# Test Values
+grid_size     = 50 #100 # please choose appropriate value = N
+number_points = 100 #200 # please choose appropriate value
 # h             = ?? # please choose appropriate value
 lam           = 0.78
 k0            = 2*np.pi/lam
@@ -104,25 +110,26 @@ delta_e       = 1.5e-2
 w             = 15.0
 
 h = grid_size/ number_points
-x = np.linspace(-grid_size/2, grid_size/2, number_points+1)
+x = np.linspace(-grid_size/2, grid_size/2, number_points)
+y = x
 
 # Gaussian waveguide profile
-prm = e_substrate + delta_e * np.exp(- (x/w)**2)
-
-# checking the gaussian permittivity profile and therefor suitable x values
-# plt.figure()
-# plt.plot(x,prm)
-# plt.show()
+prm_1D = e_substrate + delta_e * np.exp(- (x/w)**2)
+prm_2D = np.array([[e_substrate + delta_e * np.exp(- (ix**2 + iy**2)/w**2) for ix in x] for iy in y])
 
 # TASK 1
-# eff_eps, guided_modes = guided_modes_1DTE(prm, k0, h)
+# checking the gaussian permittivity profile and therefor suitable x values
+# plt.figure()
+# plt.plot(x,prm_1D)
+# plt.show()
+# eff_eps, guided_modes = guided_modes_1DTE(prm_1D, k0, h)
 # print(eff_eps)
 # print(guided_modes)
 # for i in range(len(eff_eps)):
 #     f = plt.figure()
-#     plt.plot(x, prm - e_substrate, label = "permittivity")
+#     plt.plot(x, prm_1D - e_substrate, label = "permittivity")
 #     plt.plot(x, guided_modes[:,0,i], label = "field")
 #     plt.show()
 
 # TASK 2
-guided_modes_2D(prm, k0, h, 5)
+print(guided_modes_2D(prm_2D, k0, h, 10))
